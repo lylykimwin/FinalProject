@@ -1,5 +1,5 @@
 <?php
-$host = 'mis-final-aeafajdmc3dyhqfz.centralus-01.azurewebsites.net'; // Update with your DB host
+$host = 'mis4013final.mysql.database.azure.com'; // Update with your DB host
 $user = 'lylykimwin';      // Update with your DB username
 $pass = 'UN113498602!';          // Update with your DB password
 $dbname = 'book_library'; // Update with your DB name
