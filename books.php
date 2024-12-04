@@ -1,6 +1,4 @@
-# Adjusted code for the Books page with "Prices and Quantity" and "Add to Cart" features
 
-books_php_adjusted = """
 <?php
 include 'db.php'; // Include database connection
 
