@@ -67,35 +67,43 @@ $books = $stmt->fetchAll(PDO::FETCH_ASSOC);
         </form>
 
         <!-- Books Table -->
-        <table class="table table-bordered table-striped">
-            <thead>
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Title</th>
+            <th>Author</th>
+            <th>Genre</th>
+            <th>Published Year</th>
+            <th>Actions</th> <!-- New Column -->
+        </tr>
+    </thead>
+    <tbody>
+        <?php if (count($books) > 0): ?>
+            <?php foreach ($books as $book): ?>
                 <tr>
-                    <th>ID</th>
-                    <th>Title</th>
-                    <th>Author</th>
-                    <th>Genre</th>
-                    <th>Published Year</th>
+                    <td><?= htmlspecialchars($book['id']) ?></td>
+                    <td><?= htmlspecialchars($book['title']) ?></td>
+                    <td><?= htmlspecialchars($book['author']) ?></td>
+                    <td><?= htmlspecialchars($book['genre']) ?></td>
+                    <td><?= htmlspecialchars($book['published_year']) ?></td>
+                    <td>
+                        <!-- Edit and Delete Links -->
+                        <a href="edit_book.php?id=<?= $book['id'] ?>" class="btn btn-warning btn-sm">Edit</a>
+                        <a href="delete_book.php?id=<?= $book['id'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this book?');">Delete</a>
+                    </td>
                 </tr>
-            </thead>
-            <tbody>
-                <?php if (count($books) > 0): ?>
-                    <?php foreach ($books as $book): ?>
-                        <tr>
-                            <td><?= htmlspecialchars($book['id']) ?></td>
-                            <td><?= htmlspecialchars($book['title']) ?></td>
-                            <td><?= htmlspecialchars($book['author']) ?></td>
-                            <td><?= htmlspecialchars($book['genre']) ?></td>
-                            <td><?= htmlspecialchars($book['published_year']) ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <tr>
-                        <td colspan="5" class="text-center">No books found.</td>
-                    </tr>
-                <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php endforeach; ?>
+        <?php else: ?>
+            <tr>
+                <td colspan="6" class="text-center">No books found.</td>
+            </tr>
+        <?php endif; ?>
+    </tbody>
+</table>
+
+
+    
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
