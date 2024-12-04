@@ -1,9 +1,3 @@
-<?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -47,14 +41,14 @@ error_reporting(E_ALL);
     <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <div class="container">
-            <a class="navbar-brand" href="home.php">Lyly's Library</a>
+            <a class="navbar-brand" href="index.php">Lyly's Library</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link active" href="home.php">Home</a>
+                        <a class="nav-link active" href="index.php">Home</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="authors.php">Authors</a>
@@ -63,7 +57,7 @@ error_reporting(E_ALL);
                         <a class="nav-link" href="genres.php">Genres</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="index.php">Books</a>
+                        <a class="nav-link" href="books.php">Books</a>
                     </li>
                 </ul>
             </div>
@@ -77,7 +71,7 @@ error_reporting(E_ALL);
             <p class="lead">
                 Discover a collection of books across various genres and authors. Lyly's Library is your one-stop destination for exploring the world of literature. Whether you're looking for timeless classics, contemporary novels, or insightful non-fiction, we have something for everyone.
             </p>
-            <a href="index.php" class="btn btn-primary btn-lg btn-explore">Explore Books</a>
+            <a href="books.php" class="btn btn-primary btn-lg btn-explore">Explore Books</a>
         </div>
     </div>
 
