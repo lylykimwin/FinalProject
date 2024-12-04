@@ -44,27 +44,31 @@ $authors = $stmt->fetchAll(PDO::FETCH_ASSOC);
     </nav>
 
     <!-- Authors List -->
-    <div class="container mt-4">
-        <h1 class="text-center">Authors</h1>
-        <table class="table table-bordered table-striped">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Biography</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($authors as $author): ?>
-                    <tr>
-                        <td><?= htmlspecialchars($author['id']) ?></td>
-                        <td><?= htmlspecialchars($author['name']) ?></td>
-                        <td><?= htmlspecialchars($author['biography']) ?></td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Biography</th>
+            <th>Actions</th> <!-- New Column -->
+        </tr>
+    </thead>
+    <tbody>
+        <?php foreach ($authors as $author): ?>
+            <tr>
+                <td><?= htmlspecialchars($author['id']) ?></td>
+                <td><?= htmlspecialchars($author['name']) ?></td>
+                <td><?= htmlspecialchars($author['biography']) ?></td>
+                <td>
+                    <!-- Edit and Delete Links -->
+                    <a href="edit_author.php?id=<?= $author['id'] ?>" class="btn btn-warning btn-sm">Edit</a>
+                    <a href="delete_author.php?id=<?= $author['id'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this author?');">Delete</a>
+                </td>
+            </tr>
+        <?php endforeach; ?>
+    </tbody>
+</table>
+
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
