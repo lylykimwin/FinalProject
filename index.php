@@ -1,21 +1,50 @@
+<?php
+include 'db.php'; // Include database connection
+
+// Handle search and filter inputs
+$search = $_GET['search'] ?? '';
+$author = $_GET['author'] ?? '';
+$genre = $_GET['genre'] ?? '';
+
+// Build the query dynamically based on filters
+$query = "
+    SELECT books.id, books.title, authors.name AS author, genres.name AS genre, books.published_year
+    FROM books
+    JOIN authors ON books.author_id = authors.id
+    JOIN genres ON books.genre_id = genres.id
+    WHERE books.title LIKE :search
+";
+$params = [':search' => "%$search%"];
+
+if (!empty($author)) {
+    $query .= " AND books.author_id = :author";
+    $params[':author'] = $author;
+}
+
+if (!empty($genre)) {
+    $query .= " AND books.genre_id = :genre";
+    $params[':genre'] = $genre;
+}
+
+$stmt = $conn->prepare($query);
+$stmt->execute($params);
+$books = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$authors = $conn->query("SELECT id, name FROM authors")->fetchAll(PDO::FETCH_ASSOC);
+$genres = $conn->query("SELECT id, name FROM genres")->fetchAll(PDO::FETCH_ASSOC);
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Library Management</title>
-    <link rel="stylesheet" href="styles.css"> <!-- Link to your CSS -->
-    <!-- Optionally include Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#">Library</a>
-        </div>
-    </nav>
     <div class="container mt-4">
-        <h1 class="text-center">Library Management System</h1>
+        <h1 class="text-center mb-4">Library Management</h1>
 
         <!-- Search and Filter Form -->
         <form method="GET" class="row g-3 mb-4">
@@ -47,40 +76,36 @@
             </div>
         </form>
 
-        <!-- Books Table -->
-        <table class="table table-bordered table-striped">
-            <thead class="table-dark">
-                <tr>
-                    <th>ID</th>
-                    <th>Title</th>
-                    <th>Author</th>
-                    <th>Genre</th>
-                    <th>Published Year</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if (count($books) > 0): ?>
-                    <?php foreach ($books as $book): ?>
-                        <tr>
-                            <td><?= $book['id'] ?></td>
-                            <td><?= htmlspecialchars($book['title']) ?></td>
-                            <td><?= htmlspecialchars($book['author']) ?></td>
-                            <td><?= htmlspecialchars($book['genre']) ?></td>
-                            <td><?= $book['published_year'] ?></td>
-                            <td>
+        <!-- Dropdown for Each Book -->
+        <div class="accordion" id="booksAccordion">
+            <?php foreach ($books as $index => $book): ?>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading<?= $index ?>">
+                        <button class="accordion-button <?= $index > 0 ? 'collapsed' : '' ?>" type="button" data-bs-toggle="collapse" data-bs-target="#collapse<?= $index ?>" aria-expanded="<?= $index === 0 ? 'true' : 'false' ?>" aria-controls="collapse<?= $index ?>">
+                            <?= htmlspecialchars($book['title']) ?> (ID: <?= $book['id'] ?>)
+                        </button>
+                    </h2>
+                    <div id="collapse<?= $index ?>" class="accordion-collapse collapse <?= $index === 0 ? 'show' : '' ?>" aria-labelledby="heading<?= $index ?>" data-bs-parent="#booksAccordion">
+                        <div class="accordion-body">
+                            <p><strong>Author:</strong> <?= htmlspecialchars($book['author']) ?></p>
+                            <p><strong>Genre:</strong> <?= htmlspecialchars($book['genre']) ?></p>
+                            <p><strong>Published Year:</strong> <?= $book['published_year'] ?></p>
+                            <div>
                                 <a href="edit.php?id=<?= $book['id'] ?>" class="btn btn-warning btn-sm">Edit</a>
                                 <a href="delete.php?id=<?= $book['id'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">Delete</a>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <tr>
-                        <td colspan="6" class="text-center">No results found.</td>
-                    </tr>
-                <?php endif; ?>
-            </tbody>
-        </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+
+        <!-- No Results Message -->
+        <?php if (count($books) === 0): ?>
+            <p class="text-center mt-4">No results found.</p>
+        <?php endif; ?>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
