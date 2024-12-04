@@ -30,8 +30,14 @@ $stmt = $conn->prepare($query);
 $stmt->execute($params);
 $books = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-$authors = $conn->query("SELECT id, name FROM authors")->fetchAll(PDO::FETCH_ASSOC);
-$genres = $conn->query("SELECT id, name FROM genres")->fetchAll(PDO::FETCH_ASSOC);
+// Fetch genres and count the number of books for each genre
+$genreCountsQuery = "
+    SELECT genres.name AS genre, COUNT(books.id) AS count
+    FROM books
+    JOIN genres ON books.genre_id = genres.id
+    GROUP BY genres.name
+";
+$genreCounts = $conn->query($genreCountsQuery)->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
@@ -40,7 +46,7 @@ $genres = $conn->query("SELECT id, name FROM genres")->fetchAll(PDO::FETCH_ASSOC
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Library Management</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <?php include 'libraries.php'; // Include CSS libraries ?>
 </head>
 <body>
     <div class="container mt-4">
@@ -100,12 +106,18 @@ $genres = $conn->query("SELECT id, name FROM genres")->fetchAll(PDO::FETCH_ASSOC
             <?php endforeach; ?>
         </div>
 
+        <!-- Chart Section -->
+        <div class="mt-5">
+            <h3 class="text-center">Books by Genre</h3>
+            <canvas id="genreChart" width="400" height="200"></canvas>
+        </div>
+
         <!-- No Results Message -->
         <?php if (count($books) === 0): ?>
             <p class="text-center mt-4">No results found.</p>
         <?php endif; ?>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+    <?php include 'libraries.php'; // Include JavaScript libraries ?>
 </body>
 </html>
