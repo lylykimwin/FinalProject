@@ -1,37 +1,22 @@
- <?php
+<?php
 include 'db.php'; // Include database connection
 
-// Handle search and filter inputs
+// Handle search input
 $search = $_GET['search'] ?? '';
-$author = $_GET['author'] ?? '';
-$genre = $_GET['genre'] ?? '';
 
-// Build the query dynamically based on filters
+// Query to fetch books based on search
 $query = "
     SELECT books.id, books.title, authors.name AS author, genres.name AS genre, books.published_year
     FROM books
     JOIN authors ON books.author_id = authors.id
     JOIN genres ON books.genre_id = genres.id
-    WHERE books.title LIKE :search
+    WHERE books.title LIKE :search OR authors.name LIKE :search OR genres.name LIKE :search
 ";
 $params = [':search' => "%$search%"];
-
-if (!empty($author)) {
-    $query .= " AND books.author_id = :author";
-    $params[':author'] = $author;
-}
-
-if (!empty($genre)) {
-    $query .= " AND books.genre_id = :genre";
-    $params[':genre'] = $genre;
-}
 
 $stmt = $conn->prepare($query);
 $stmt->execute($params);
 $books = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-$authors = $conn->query("SELECT id, name FROM authors")->fetchAll(PDO::FETCH_ASSOC);
-$genres = $conn->query("SELECT id, name FROM genres")->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
@@ -39,71 +24,77 @@ $genres = $conn->query("SELECT id, name FROM genres")->fetchAll(PDO::FETCH_ASSOC
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Library Management</title>
+    <title>Book Catalog - Lyly's Library</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-    <div class="container mt-4">
-        <h1 class="text-center mb-4">Library Management</h1>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="index.php">Lyly's Library</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.php">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="authors.php">Authors</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="genres.php">Genres</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="books.php">Books</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
 
-        <!-- Search and Filter Form -->
+    <!-- Search Bar -->
+    <div class="container mt-4">
+        <h1 class="text-center mb-4">Search the Catalog</h1>
         <form method="GET" class="row g-3 mb-4">
-            <div class="col-md-6">
-                <input type="text" class="form-control" name="search" placeholder="Search by title..." value="<?= htmlspecialchars($search) ?>">
+            <div class="col-md-10">
+                <input type="text" name="search" class="form-control" placeholder="Search by title, author, or genre..." value="<?= htmlspecialchars($search) ?>">
             </div>
-            <div class="col-md-3">
-                <select name="author" class="form-select">
-                    <option value="">Select Author</option>
-                    <?php foreach ($authors as $a): ?>
-                        <option value="<?= $a['id'] ?>" <?= $a['id'] == $author ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($a['name']) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <select name="genre" class="form-select">
-                    <option value="">Select Genre</option>
-                    <?php foreach ($genres as $g): ?>
-                        <option value="<?= $g['id'] ?>" <?= $g['id'] == $genre ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($g['name']) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <div class="col-md-12 text-center">
-                <button type="submit" class="btn btn-primary">Filter</button>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Search</button>
             </div>
         </form>
 
-        <!-- Dropdown for Each Book -->
-        <div class="accordion" id="booksAccordion">
-            <?php foreach ($books as $index => $book): ?>
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="heading<?= $index ?>">
-                        <button class="accordion-button <?= $index > 0 ? 'collapsed' : '' ?>" type="button" data-bs-toggle="collapse" data-bs-target="#collapse<?= $index ?>" aria-expanded="<?= $index === 0 ? 'true' : 'false' ?>" aria-controls="collapse<?= $index ?>">
-                            <?= htmlspecialchars($book['title']) ?> (ID: <?= $book['id'] ?>)
-                        </button>
-                    </h2>
-                    <div id="collapse<?= $index ?>" class="accordion-collapse collapse <?= $index === 0 ? 'show' : '' ?>" aria-labelledby="heading<?= $index ?>" data-bs-parent="#booksAccordion">
-                        <div class="accordion-body">
-                            <p><strong>Author:</strong> <?= htmlspecialchars($book['author']) ?></p>
-                            <p><strong>Genre:</strong> <?= htmlspecialchars($book['genre']) ?></p>
-                            <p><strong>Published Year:</strong> <?= $book['published_year'] ?></p>
-                            <div>
-                                <a href="edit.php?id=<?= $book['id'] ?>" class="btn btn-warning btn-sm">Edit</a>
-                                <a href="delete.php?id=<?= $book['id'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">Delete</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            <?php endforeach; ?>
-        </div>
-
-        <!-- No Results Message -->
-        <?php if (count($books) === 0): ?>
-            <p class="text-center mt-4">No results found.</p>
-        <?php endif; ?>
+        <!-- Books Table -->
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Title</th>
+                    <th>Author</th>
+                    <th>Genre</th>
+                    <th>Published Year</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (count($books) > 0): ?>
+                    <?php foreach ($books as $book): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($book['id']) ?></td>
+                            <td><?= htmlspecialchars($book['title']) ?></td>
+                            <td><?= htmlspecialchars($book['author']) ?></td>
+                            <td><?= htmlspecialchars($book['genre']) ?></td>
+                            <td><?= htmlspecialchars($book['published_year']) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <tr>
+                        <td colspan="5" class="text-center">No books found.</td>
+                    </tr>
+                <?php endif; ?>
+            </tbody>
+        </table>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
