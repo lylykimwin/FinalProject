@@ -30,14 +30,8 @@ $stmt = $conn->prepare($query);
 $stmt->execute($params);
 $books = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Fetch genres and count the number of books for each genre
-$genreCountsQuery = "
-    SELECT genres.name AS genre, COUNT(books.id) AS count
-    FROM books
-    JOIN genres ON books.genre_id = genres.id
-    GROUP BY genres.name
-";
-$genreCounts = $conn->query($genreCountsQuery)->fetchAll(PDO::FETCH_ASSOC);
+$authors = $conn->query("SELECT id, name FROM authors")->fetchAll(PDO::FETCH_ASSOC);
+$genres = $conn->query("SELECT id, name FROM genres")->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
@@ -106,12 +100,6 @@ $genreCounts = $conn->query($genreCountsQuery)->fetchAll(PDO::FETCH_ASSOC);
             <?php endforeach; ?>
         </div>
 
-        <!-- Chart Section -->
-        <div class="mt-5">
-            <h3 class="text-center">Books by Genre</h3>
-            <canvas id="genreChart" width="400" height="200"></canvas>
-        </div>
-
         <!-- No Results Message -->
         <?php if (count($books) === 0): ?>
             <p class="text-center mt-4">No results found.</p>
@@ -119,41 +107,5 @@ $genreCounts = $conn->query($genreCountsQuery)->fetchAll(PDO::FETCH_ASSOC);
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        const ctx = document.getElementById('genreChart').getContext('2d');
-        const genreChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: <?= json_encode(array_column($genreCounts, 'genre')) ?>,
-                datasets: [{
-                    label: '# of Books',
-                    data: <?= json_encode(array_column($genreCounts, 'count')) ?>,
-                    backgroundColor: [
-                        'rgba(255, 99, 132, 0.2)',
-                        'rgba(54, 162, 235, 0.2)',
-                        'rgba(255, 206, 86, 0.2)',
-                        'rgba(75, 192, 192, 0.2)',
-                        'rgba(153, 102, 255, 0.2)'
-                    ],
-                    borderColor: [
-                        'rgba(255, 99, 132, 1)',
-                        'rgba(54, 162, 235, 1)',
-                        'rgba(255, 206, 86, 1)',
-                        'rgba(75, 192, 192, 1)',
-                        'rgba(153, 102, 255, 1)'
-                    ],
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
-    </script>
 </body>
 </html>
