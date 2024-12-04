@@ -12,7 +12,7 @@ error_reporting(E_ALL);
     <title>Lyly's Library</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        /* Custom styles for the home page */
+        /* Custom styles */
         body {
             font-family: Arial, sans-serif;
             background-color: #f8f9fa;
@@ -55,6 +55,12 @@ error_reporting(E_ALL);
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
                         <a class="nav-link active" href="home.php">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="authors.php">Authors</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="genres.php">Genres</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="index.php">Books</a>
