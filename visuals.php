@@ -55,9 +55,12 @@ $popularGenre = $stmtPopularGenre->fetch(PDO::FETCH_ASSOC);
 
 // Fetch most prolific author (author with the most books)
 $queryProlificAuthor = "
-    SELECT authors.name AS author_name, COUNT(books.id) AS book_count
+    SELECT 
+        authors.name AS author_name, 
+        COUNT(books.id) AS book_count
     FROM authors
     LEFT JOIN books ON authors.id = books.author_id
+    WHERE books.author_id IS NOT NULL
     GROUP BY authors.id, authors.name
     ORDER BY book_count DESC
     LIMIT 1;
@@ -65,7 +68,6 @@ $queryProlificAuthor = "
 $stmtProlificAuthor = $conn->prepare($queryProlificAuthor);
 $stmtProlificAuthor->execute();
 $prolificAuthor = $stmtProlificAuthor->fetch(PDO::FETCH_ASSOC);
-?>
 
 <!DOCTYPE html>
 <html lang="en">
