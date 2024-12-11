@@ -22,6 +22,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['cart'] = $cart; // Save updated cart to session
     }
 
+    if (isset($_POST['remove_item'])) {
+        $book_id = $_POST['remove_item'];
+        unset($cart[$book_id]); // Remove the item from the cart
+        $_SESSION['cart'] = $cart; // Save updated cart to session
+    }
+
     if (isset($_POST['clear_cart'])) {
         unset($_SESSION['cart']); // Clear the cart
     }
@@ -115,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </td>
                                 <td>$<?= number_format($subtotal, 2) ?></td>
                                 <td>
-                                    <button type="submit" name="quantities[<?= $book_id ?>]" value="0" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to remove this item?');">Remove</button>
+                                    <button type="submit" name="remove_item" value="<?= $book_id ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to remove this item?');">Remove</button>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
