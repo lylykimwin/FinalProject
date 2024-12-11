@@ -8,15 +8,33 @@ include 'db.php'; // Include database connection
 
 // Fetch genres and their associated books
 $query = "
-    SELECT genres.id AS genre_id, genres.name AS genre_name, GROUP_CONCAT(books.title SEPARATOR ', ') AS book_titles
+    SELECT genres.id AS genre_id, genres.name AS genre_name, books.title AS book_title
     FROM genres
     LEFT JOIN books ON genres.id = books.genre_id
-    GROUP BY genres.id, genres.name
-    ORDER BY genres.name
+    ORDER BY genres.name, books.title
 ";
 $stmt = $conn->prepare($query);
 $stmt->execute();
-$genres = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$genreData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Group books by genre
+$genres = [];
+foreach ($genreData as $row) {
+    $genreId = $row['genre_id'];
+    $genreName = $row['genre_name'];
+    $bookTitle = $row['book_title'];
+
+    if (!isset($genres[$genreId])) {
+        $genres[$genreId] = [
+            'name' => $genreName,
+            'books' => [],
+        ];
+    }
+
+    if ($bookTitle) {
+        $genres[$genreId]['books'][] = $bookTitle;
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -87,7 +105,7 @@ $genres = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <h1 class="text-center mb-4">Explore Genres</h1>
         <?php if (!empty($genres)): ?>
             <div class="row">
-                <?php foreach ($genres as $genre): ?>
+                <?php foreach ($genres as $genreId => $genre): ?>
                     <div class="col-md-6 col-lg-4 mb-4">
                         <div class="card genre-card">
                             <div class="card-body">
@@ -95,13 +113,13 @@ $genres = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     <div class="genre-icon">
                                         <i class="fas fa-book"></i> <!-- Replace with icons or images -->
                                     </div>
-                                    <h5 class="card-title mt-3"><?= htmlspecialchars($genre['genre_name']) ?></h5>
+                                    <h5 class="card-title mt-3"><?= htmlspecialchars($genre['name']) ?></h5>
                                 </div>
-                                <p class="card-text">Discover books in <?= htmlspecialchars($genre['genre_name']) ?>.</p>
+                                <p class="card-text">Discover books in <?= htmlspecialchars($genre['name']) ?>.</p>
                                 <div class="book-list">
-                                    <?php if (!empty($genre['book_titles'])): ?>
+                                    <?php if (!empty($genre['books'])): ?>
                                         <ul class="list-group list-group-flush">
-                                            <?php foreach (explode(', ', $genre['book_titles']) as $bookTitle): ?>
+                                            <?php foreach ($genre['books'] as $bookTitle): ?>
                                                 <li class="list-group-item"><?= htmlspecialchars($bookTitle) ?></li>
                                             <?php endforeach; ?>
                                         </ul>
@@ -109,7 +127,7 @@ $genres = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                         <p class="text-muted">No books available in this genre.</p>
                                     <?php endif; ?>
                                 </div>
-                                <a href="books.php?genre=<?= $genre['genre_id'] ?>" class="btn btn-outline-primary btn-sm mt-3">View All Books</a>
+                                <a href="books.php?genre=<?= $genreId ?>" class="btn btn-outline-primary btn-sm mt-3">View All Books</a>
                             </div>
                         </div>
                     </div>
