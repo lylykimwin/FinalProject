@@ -23,23 +23,6 @@ $chartData = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $genres = array_column($chartData, 'genre_name');
 $bookCounts = array_column($chartData, 'book_count');
 
-// Fetch data for library growth over time
-$queryGrowth = "
-    SELECT 
-        YEAR(published_year) AS year, 
-        COUNT(*) AS book_count
-    FROM books
-    WHERE published_year IS NOT NULL
-    GROUP BY YEAR(published_year)
-    ORDER BY YEAR(published_year);
-";
-$stmtGrowth = $conn->prepare($queryGrowth);
-$stmtGrowth->execute();
-$growthData = $stmtGrowth->fetchAll(PDO::FETCH_ASSOC);
-
-$years = array_column($growthData, 'year');
-$growthCounts = array_column($growthData, 'book_count');
-
 // Fetch total number of books
 $queryBooks = "SELECT COUNT(*) AS total_books FROM books";
 $stmtBooks = $conn->prepare($queryBooks);
@@ -138,9 +121,8 @@ $prolificAuthor = $stmtProlificAuthor->fetch(PDO::FETCH_ASSOC);
         </div>
     </div>
 
-    <!-- Visualizations -->
+    <!-- Bar Chart Section -->
     <div class="container mt-4">
-        <!-- Bar Chart: Books Per Genre -->
         <h2 class="text-center mb-4">Books Per Genre</h2>
         <div class="row mb-4">
             <div class="col-md-8 mx-auto">
@@ -151,21 +133,9 @@ $prolificAuthor = $stmtProlificAuthor->fetch(PDO::FETCH_ASSOC);
                 </div>
             </div>
         </div>
-
-        <!-- Line Chart: Library Growth -->
-        <h2 class="text-center mb-4">Library Growth Over Time</h2>
-        <div class="row mb-4">
-            <div class="col-md-8 mx-auto">
-                <div class="card">
-                    <div class="card-body">
-                        <canvas id="growthChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
-    <!-- Chart.js Scripts -->
+    <!-- Chart.js Script -->
     <script>
         // Bar Chart: Books Per Genre
         const genreCtx = document.getElementById('genreChart').getContext('2d');
@@ -186,29 +156,6 @@ $prolificAuthor = $stmtProlificAuthor->fetch(PDO::FETCH_ASSOC);
                 scales: {
                     y: { beginAtZero: true, title: { display: true, text: 'Books' } },
                     x: { title: { display: true, text: 'Genres' } }
-                }
-            }
-        });
-
-        // Line Chart: Library Growth
-        const growthCtx = document.getElementById('growthChart').getContext('2d');
-        new Chart(growthCtx, {
-            type: 'line',
-            data: {
-                labels: <?= json_encode($years) ?>,
-                datasets: [{
-                    label: 'Books Added',
-                    data: <?= json_encode($growthCounts) ?>,
-                    borderColor: '#007bff',
-                    fill: false,
-                    tension: 0.1
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: { beginAtZero: true, title: { display: true, text: 'Books Added' } },
-                    x: { title: { display: true, text: 'Year' } }
                 }
             }
         });
