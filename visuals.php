@@ -36,17 +36,16 @@ $stmtAvailability->execute();
 $availability = $stmtAvailability->fetch(PDO::FETCH_ASSOC);
 
 // Fetch data for the bubble chart (pricing and popularity)
+// Mocking popularity data for demonstration
 $queryPopularity = "
     SELECT 
         books.title AS book_title, 
         book_stock.price AS price, 
-        COUNT(cart.book_id) AS popularity
+        FLOOR(RAND() * 100) AS popularity
     FROM books
     JOIN book_stock ON books.id = book_stock.book_id
-    LEFT JOIN cart ON books.id = cart.book_id
-    GROUP BY books.id, books.title, book_stock.price
-    HAVING popularity > 0
-    ORDER BY popularity DESC;
+    ORDER BY RAND()
+    LIMIT 10;
 ";
 $stmtPopularity = $conn->prepare($queryPopularity);
 $stmtPopularity->execute();
@@ -236,23 +235,14 @@ $prolificAuthor = $stmtProlificAuthor->fetch(PDO::FETCH_ASSOC);
         new Chart(popularityCtx, {
             type: 'bubble',
             data: {
-                datasets: [{
-                    label: 'Books',
-                    data: <?= json_encode(array_map(function ($title, $price, $popularity) {
-                        return [
-                            'x' => $price,
-                            'y' => $popularity,
-                            'r' => $popularity * 2
-                        ];
-                    }, $titles, $prices, $popularities)) ?>,
-                    backgroundColor: 'rgba(54, 162, 235, 0.5)'
-                }]
-            },
-            options: {
-                scales: {
-                    x: { title: { display: true, text: 'Price ($)' } },
-                    y: { title: { display: true, text: 'Popularity (Cart Additions)' }, beginAtZero: true }
-                }
+                datasets: <?= json_encode(array_map(function ($title, $price, $popularity) {
+                    return [
+                        'x' => $price,
+                        'y' => $popularity,
+                        'r' => $popularity
+                    ];
+                }, $titles, $prices, $popularities)) ?>,
+                backgroundColor: 'rgba(54, 162, 235, 0.5)'
             }
         });
     </script>
