@@ -30,7 +30,7 @@ foreach ($genreData as $row) {
     if (!isset($genres[$genreId])) {
         $genres[$genreId] = [
             'name' => $genreName,
-            'books' => [],
+            'books' => []
         ];
     }
 
