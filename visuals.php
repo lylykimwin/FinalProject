@@ -35,26 +35,6 @@ $stmtAvailability = $conn->prepare($queryAvailability);
 $stmtAvailability->execute();
 $availability = $stmtAvailability->fetch(PDO::FETCH_ASSOC);
 
-// Fetch data for the bubble chart (pricing and popularity)
-// Mocking popularity data for demonstration
-$queryPopularity = "
-    SELECT 
-        books.title AS book_title, 
-        book_stock.price AS price, 
-        FLOOR(RAND() * 100) AS popularity
-    FROM books
-    JOIN book_stock ON books.id = book_stock.book_id
-    ORDER BY RAND()
-    LIMIT 10;
-";
-$stmtPopularity = $conn->prepare($queryPopularity);
-$stmtPopularity->execute();
-$popularityData = $stmtPopularity->fetchAll(PDO::FETCH_ASSOC);
-
-$titles = array_column($popularityData, 'book_title');
-$prices = array_column($popularityData, 'price');
-$popularities = array_column($popularityData, 'popularity');
-
 // Fetch total number of books
 $queryBooks = "SELECT COUNT(*) AS total_books FROM books";
 $stmtBooks = $conn->prepare($queryBooks);
@@ -178,18 +158,6 @@ $prolificAuthor = $stmtProlificAuthor->fetch(PDO::FETCH_ASSOC);
                 </div>
             </div>
         </div>
-
-        <!-- Bubble Chart: Pricing vs Popularity -->
-        <h2 class="text-center mb-4">Pricing vs. Popularity</h2>
-        <div class="row mb-4">
-            <div class="col-md-8 mx-auto">
-                <div class="card">
-                    <div class="card-body">
-                        <canvas id="popularityChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- Chart.js Scripts -->
@@ -229,7 +197,6 @@ $prolificAuthor = $stmtProlificAuthor->fetch(PDO::FETCH_ASSOC);
                 }]
             }
         });
-
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
