@@ -230,21 +230,6 @@ $prolificAuthor = $stmtProlificAuthor->fetch(PDO::FETCH_ASSOC);
             }
         });
 
-        // Bubble Chart: Pricing vs Popularity
-        const popularityCtx = document.getElementById('popularityChart').getContext('2d');
-        new Chart(popularityCtx, {
-            type: 'bubble',
-            data: {
-                datasets: <?= json_encode(array_map(function ($title, $price, $popularity) {
-                    return [
-                        'x' => $price,
-                        'y' => $popularity,
-                        'r' => $popularity
-                    ];
-                }, $titles, $prices, $popularities)) ?>,
-                backgroundColor: 'rgba(54, 162, 235, 0.5)'
-            }
-        });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
