@@ -1,32 +1,105 @@
 <?php
-// Enable error reporting for debugging
+// Enable error reporting
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 include 'db.php'; // Include database connection
 
-// Handle search input and genre filter
-$search = $_GET['search'] ?? '';
-$genreId = $_GET['genre'] ?? null;
-
-$query = "
-    SELECT books.id, books.title, authors.name AS author, genres.name AS genre, books.published_year, book_stock.price, book_stock.stock AS quantity
-    FROM books
-    JOIN authors ON books.author_id = authors.id
-    JOIN genres ON books.genre_id = genres.id
-    JOIN book_stock ON books.id = book_stock.book_id
-    WHERE (books.title LIKE :search OR authors.name LIKE :search OR genres.name LIKE :search)
-";
-
-$params = [':search' => "%$search%"];
-
-if ($genreId) {
-    $query .= " AND genres.id = :genreId";
-    $params[':genreId'] = $genreId;
-}
-
+// Fetch all genres
+$query = "SELECT * FROM genres";
 $stmt = $conn->prepare($query);
-$stmt->execute($params);
-$books = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$stmt->execute();
+$genres = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genres - Lyly's Library</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Genre Cards */
+        .genre-card {
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+        }
+
+        .genre-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .genre-icon {
+            font-size: 50px;
+            color: #007bff;
+            transition: color 0.3s;
+        }
+
+        .genre-card:hover .genre-icon {
+            color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="home.php">Lyly's Library</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="home.php">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="authors.php">Authors</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="genres.php">Genres</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="books.php">Books</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="cart.php">Cart</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Genre Cards -->
+    <div class="container mt-4">
+        <h1 class="text-center mb-4">Explore Genres</h1>
+        <?php if (!empty($genres)): ?>
+            <div class="row">
+                <?php foreach ($genres as $genre): ?>
+                    <div class="col-md-4 col-lg-3 mb-4">
+                        <a href="books.php?genre=<?= $genre['id'] ?>" class="text-decoration-none">
+                            <div class="card genre-card text-center">
+                                <div class="card-body">
+                                    <div class="genre-icon">
+                                        <i class="fas fa-book"></i> <!-- Replace with icons or images -->
+                                    </div>
+                                    <h5 class="card-title mt-3"><?= htmlspecialchars($genre['name']) ?></h5>
+                                    <p class="card-text">Discover books in <?= htmlspecialchars($genre['name']) ?>.</p>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php else: ?>
+            <div class="alert alert-warning text-center">No genres available at the moment. Please check back later.</div>
+        <?php endif; ?>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/js/all.min.js"></script>
+</body>
+</html>
