@@ -1,8 +1,9 @@
+<?php
+// Enable error reporting for debugging
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-<?php
 include 'db.php'; // Include database connection
 
 // Handle search input
@@ -18,9 +19,14 @@ $query = "
 ";
 $params = [':search' => "%$search%"];
 
-$stmt = $conn->prepare($query);
-$stmt->execute($params);
-$books = $stmt->fetchAll(PDO::FETCH_ASSOC);
+try {
+    $stmt = $conn->prepare($query);
+    $stmt->execute($params);
+    $books = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    // Handle query execution errors
+    die("Error fetching books: " . $e->getMessage());
+}
 ?>
 
 <!DOCTYPE html>
@@ -85,7 +91,7 @@ $books = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </tr>
             </thead>
             <tbody>
-                <?php if (count($books) > 0): ?>
+                <?php if (!empty($books)): ?>
                     <?php foreach ($books as $book): ?>
                         <tr>
                             <td><?= htmlspecialchars($book['id']) ?></td>
@@ -93,7 +99,7 @@ $books = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <td><?= htmlspecialchars($book['author']) ?></td>
                             <td><?= htmlspecialchars($book['genre']) ?></td>
                             <td><?= htmlspecialchars($book['published_year']) ?></td>
-                            <td>$<?= htmlspecialchars(number_format($book['price'], 2)) ?></td>
+                            <td>$<?= number_format($book['price'], 2) ?></td>
                             <td><?= htmlspecialchars($book['quantity']) ?></td>
                             <td>
                                 <form action="add_to_cart.php" method="POST" style="display:inline-block;">
@@ -115,4 +121,3 @@ $books = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-
