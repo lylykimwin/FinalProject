@@ -30,18 +30,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $conn->beginTransaction(); // Begin transaction
             foreach ($cart as $book_id => $item) {
-                // Fetch current stock
                 $queryStock = "SELECT stock FROM book_stock WHERE book_id = :book_id";
                 $stmtStock = $conn->prepare($queryStock);
                 $stmtStock->execute([':book_id' => $book_id]);
                 $currentStock = $stmtStock->fetch(PDO::FETCH_ASSOC)['stock'];
 
-                // Check if enough stock is available
                 if ($item['quantity'] > $currentStock) {
                     throw new Exception("Not enough stock for book: {$item['title']}");
                 }
 
-                // Deduct stock
                 $queryUpdateStock = "UPDATE book_stock SET stock = stock - :quantity WHERE book_id = :book_id";
                 $stmtUpdateStock = $conn->prepare($queryUpdateStock);
                 $stmtUpdateStock->execute([
@@ -50,16 +47,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
             }
 
-            $conn->commit(); // Commit transaction
-            unset($_SESSION['cart']); // Clear cart after successful checkout
+            $conn->commit();
+            unset($_SESSION['cart']);
             $_SESSION['success'] = "Checkout completed successfully!";
         } catch (Exception $e) {
-            $conn->rollBack(); // Rollback transaction in case of error
+            $conn->rollBack();
             $_SESSION['error'] = "Checkout failed: " . $e->getMessage();
         }
     }
 
-    // Refresh the page to reflect updates
     header('Location: cart.php');
     exit;
 }
