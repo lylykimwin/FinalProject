@@ -9,12 +9,13 @@ include 'db.php'; // Include database connection
 // Handle search input
 $search = $_GET['search'] ?? '';
 
-// Query to fetch books based on search, including price and quantity
+// Query to fetch books, including price and stock from the book_stock table
 $query = "
-    SELECT books.id, books.title, authors.name AS author, genres.name AS genre, books.published_year, books.price, books.quantity
+    SELECT books.id, books.title, authors.name AS author, genres.name AS genre, books.published_year, book_stock.price, book_stock.stock AS quantity
     FROM books
     JOIN authors ON books.author_id = authors.id
     JOIN genres ON books.genre_id = genres.id
+    JOIN book_stock ON books.id = book_stock.book_id
     WHERE books.title LIKE :search OR authors.name LIKE :search OR genres.name LIKE :search
 ";
 $params = [':search' => "%$search%"];
