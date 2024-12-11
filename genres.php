@@ -1,5 +1,5 @@
 <?php
-// Enable error reporting
+// Enable error reporting for debugging
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -8,9 +8,10 @@ include 'db.php'; // Include database connection
 
 // Fetch genres and their associated books
 $query = "
-    SELECT genres.id AS genre_id, 
-           genres.name AS genre_name, 
-           GROUP_CONCAT(books.title SEPARATOR ', ') AS book_titles
+    SELECT 
+        genres.id AS genre_id, 
+        genres.name AS genre_name, 
+        GROUP_CONCAT(books.title ORDER BY books.title SEPARATOR ', ') AS book_titles
     FROM genres
     LEFT JOIN books ON genres.id = books.genre_id
     GROUP BY genres.id, genres.name
