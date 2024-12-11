@@ -6,11 +6,35 @@ error_reporting(E_ALL);
 
 include 'db.php'; // Include database connection
 
-// Fetch all genres
-$query = "SELECT * FROM genres";
+// Fetch genres and their associated books
+$query = "
+    SELECT genres.id AS genre_id, genres.name AS genre_name, books.title AS book_title
+    FROM genres
+    LEFT JOIN books ON genres.id = books.genre_id
+    ORDER BY genres.name, books.title
+";
 $stmt = $conn->prepare($query);
 $stmt->execute();
-$genres = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$genreData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Group books by genre
+$genres = [];
+foreach ($genreData as $row) {
+    $genreId = $row['genre_id'];
+    $genreName = $row['genre_name'];
+    $bookTitle = $row['book_title'];
+
+    if (!isset($genres[$genreId])) {
+        $genres[$genreId] = [
+            'name' => $genreName,
+            'books' => [],
+        ];
+    }
+
+    if ($bookTitle) {
+        $genres[$genreId]['books'][] = $bookTitle;
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -21,10 +45,8 @@ $genres = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <title>Genres - Lyly's Library</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        /* Genre Cards */
         .genre-card {
             transition: transform 0.3s, box-shadow 0.3s;
-            cursor: pointer;
         }
 
         .genre-card:hover {
@@ -35,11 +57,16 @@ $genres = $stmt->fetchAll(PDO::FETCH_ASSOC);
         .genre-icon {
             font-size: 50px;
             color: #007bff;
-            transition: color 0.3s;
         }
 
         .genre-card:hover .genre-icon {
             color: #0056b3;
+        }
+
+        .book-list {
+            max-height: 150px;
+            overflow-y: auto;
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -78,19 +105,31 @@ $genres = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <h1 class="text-center mb-4">Explore Genres</h1>
         <?php if (!empty($genres)): ?>
             <div class="row">
-                <?php foreach ($genres as $genre): ?>
-                    <div class="col-md-4 col-lg-3 mb-4">
-                        <a href="books.php?genre=<?= $genre['id'] ?>" class="text-decoration-none">
-                            <div class="card genre-card text-center">
-                                <div class="card-body">
+                <?php foreach ($genres as $genreId => $genre): ?>
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card genre-card">
+                            <div class="card-body">
+                                <div class="text-center">
                                     <div class="genre-icon">
                                         <i class="fas fa-book"></i> <!-- Replace with icons or images -->
                                     </div>
                                     <h5 class="card-title mt-3"><?= htmlspecialchars($genre['name']) ?></h5>
-                                    <p class="card-text">Discover books in <?= htmlspecialchars($genre['name']) ?>.</p>
                                 </div>
+                                <p class="card-text">Discover books in <?= htmlspecialchars($genre['name']) ?>.</p>
+                                <div class="book-list">
+                                    <?php if (!empty($genre['books'])): ?>
+                                        <ul class="list-group list-group-flush">
+                                            <?php foreach ($genre['books'] as $bookTitle): ?>
+                                                <li class="list-group-item"><?= htmlspecialchars($bookTitle) ?></li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    <?php else: ?>
+                                        <p class="text-muted">No books available in this genre.</p>
+                                    <?php endif; ?>
+                                </div>
+                                <a href="books.php?genre=<?= $genreId ?>" class="btn btn-outline-primary btn-sm mt-3">View All Books</a>
                             </div>
-                        </a>
+                        </div>
                     </div>
                 <?php endforeach; ?>
             </div>
