@@ -11,33 +11,15 @@ $query = "
     SELECT 
         genres.id AS genre_id, 
         genres.name AS genre_name, 
-        books.title AS book_title
+        GROUP_CONCAT(books.title ORDER BY books.title SEPARATOR ', ') AS book_titles
     FROM genres
     LEFT JOIN books ON genres.id = books.genre_id
-    ORDER BY genres.name, books.title
+    GROUP BY genres.id, genres.name
+    ORDER BY genres.name;
 ";
 $stmt = $conn->prepare($query);
 $stmt->execute();
-$genreData = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Group books by genre
-$genres = [];
-foreach ($genreData as $row) {
-    $genreId = $row['genre_id'];
-    $genreName = $row['genre_name'];
-    $bookTitle = $row['book_title'];
-
-    if (!isset($genres[$genreId])) {
-        $genres[$genreId] = [
-            'name' => $genreName,
-            'books' => []
-        ];
-    }
-
-    if ($bookTitle) {
-        $genres[$genreId]['books'][] = $bookTitle;
-    }
-}
+$genres = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
@@ -74,37 +56,8 @@ foreach ($genreData as $row) {
     </style>
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
-    <div class="container">
-        <a class="navbar-brand" href="home.php">Lyly's Library</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ms-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="home.php">Home</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="authors.php">Authors</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="genres.php">Genres</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="books.php">Books</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="cart.php">Cart</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="visuals.php">Visuals</a> <!-- New Visuals Tab -->
-                </li>
-            </ul>
-        </div>
-    </div>
-</nav>
-
+    <!-- Navigation Bar -->
+    <?php include 'header.php'; ?>
 
     <!-- Genre Cards -->
     <div class="container mt-4">
@@ -117,15 +70,15 @@ foreach ($genreData as $row) {
                             <div class="card-body">
                                 <div class="text-center">
                                     <div class="genre-icon">
-                                        <i class="fas fa-book"></i>
+                                        <i class="fas fa-book"></i> <!-- Replace with your desired icons -->
                                     </div>
-                                    <h5 class="card-title mt-3"><?= htmlspecialchars($genre['name']) ?></h5>
+                                    <h5 class="card-title mt-3"><?= htmlspecialchars($genre['genre_name']) ?></h5>
                                 </div>
-                                <p class="card-text">Discover books in <?= htmlspecialchars($genre['name']) ?>.</p>
+                                <p class="card-text">Discover books in <?= htmlspecialchars($genre['genre_name']) ?>.</p>
                                 <div class="book-list">
-                                    <?php if (!empty($genre['books'])): ?>
+                                    <?php if (!empty($genre['book_titles'])): ?>
                                         <ul class="list-group list-group-flush">
-                                            <?php foreach ($genre['books'] as $bookTitle): ?>
+                                            <?php foreach (explode(', ', $genre['book_titles']) as $bookTitle): ?>
                                                 <li class="list-group-item"><?= htmlspecialchars($bookTitle) ?></li>
                                             <?php endforeach; ?>
                                         </ul>
@@ -133,7 +86,7 @@ foreach ($genreData as $row) {
                                         <p class="text-muted">No books available in this genre.</p>
                                     <?php endif; ?>
                                 </div>
-                                <a href="books.php?genre=<?= $genreId ?>" class="btn btn-outline-primary btn-sm mt-3">View All Books</a>
+                                <a href="books.php?genre=<?= $genre['genre_id'] ?>" class="btn btn-outline-primary btn-sm mt-3">View All Books</a>
                             </div>
                         </div>
                     </div>
