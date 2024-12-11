@@ -23,6 +23,23 @@ $chartData = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $genres = array_column($chartData, 'genre_name');
 $bookCounts = array_column($chartData, 'book_count');
 
+// Fetch data for library growth over time
+$queryGrowth = "
+    SELECT 
+        YEAR(published_year) AS year, 
+        COUNT(*) AS book_count
+    FROM books
+    WHERE published_year IS NOT NULL
+    GROUP BY YEAR(published_year)
+    ORDER BY YEAR(published_year);
+";
+$stmtGrowth = $conn->prepare($queryGrowth);
+$stmtGrowth->execute();
+$growthData = $stmtGrowth->fetchAll(PDO::FETCH_ASSOC);
+
+$years = array_column($growthData, 'year');
+$growthCounts = array_column($growthData, 'book_count');
+
 // Fetch total number of books
 $queryBooks = "SELECT COUNT(*) AS total_books FROM books";
 $stmtBooks = $conn->prepare($queryBooks);
@@ -121,64 +138,77 @@ $prolificAuthor = $stmtProlificAuthor->fetch(PDO::FETCH_ASSOC);
         </div>
     </div>
 
-    <!-- Bar Chart Section -->
+    <!-- Visualizations -->
     <div class="container mt-4">
-        <h1 class="text-center mb-4">Books Per Genre</h1>
-        <div class="row">
+        <!-- Bar Chart: Books Per Genre -->
+        <h2 class="text-center mb-4">Books Per Genre</h2>
+        <div class="row mb-4">
             <div class="col-md-8 mx-auto">
                 <div class="card">
                     <div class="card-body">
-                        <h5 class="card-title text-center">Books Per Genre</h5>
                         <canvas id="genreChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Line Chart: Library Growth -->
+        <h2 class="text-center mb-4">Library Growth Over Time</h2>
+        <div class="row mb-4">
+            <div class="col-md-8 mx-auto">
+                <div class="card">
+                    <div class="card-body">
+                        <canvas id="growthChart"></canvas>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Chart.js Script -->
+    <!-- Chart.js Scripts -->
     <script>
-        const ctx = document.getElementById('genreChart').getContext('2d');
-        const genreChart = new Chart(ctx, {
+        // Bar Chart: Books Per Genre
+        const genreCtx = document.getElementById('genreChart').getContext('2d');
+        new Chart(genreCtx, {
             type: 'bar',
             data: {
-                labels: <?= json_encode($genres) ?>, // Genres as labels
+                labels: <?= json_encode($genres) ?>,
                 datasets: [{
                     label: 'Number of Books',
-                    data: <?= json_encode($bookCounts) ?>, // Book counts as data
-                    backgroundColor: 'rgba(0, 123, 255, 0.5)', // Blue bars
+                    data: <?= json_encode($bookCounts) ?>,
+                    backgroundColor: 'rgba(0, 123, 255, 0.5)',
                     borderColor: 'rgba(0, 123, 255, 1)',
                     borderWidth: 1
                 }]
             },
             options: {
                 responsive: true,
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return `${context.raw} books`;
-                            }
-                        }
-                    }
-                },
                 scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Number of Books'
-                        }
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Genres'
-                        }
-                    }
+                    y: { beginAtZero: true, title: { display: true, text: 'Books' } },
+                    x: { title: { display: true, text: 'Genres' } }
+                }
+            }
+        });
+
+        // Line Chart: Library Growth
+        const growthCtx = document.getElementById('growthChart').getContext('2d');
+        new Chart(growthCtx, {
+            type: 'line',
+            data: {
+                labels: <?= json_encode($years) ?>,
+                datasets: [{
+                    label: 'Books Added',
+                    data: <?= json_encode($growthCounts) ?>,
+                    borderColor: '#007bff',
+                    fill: false,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true, title: { display: true, text: 'Books Added' } },
+                    x: { title: { display: true, text: 'Year' } }
                 }
             }
         });
