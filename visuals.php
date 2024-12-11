@@ -6,9 +6,8 @@ error_reporting(E_ALL);
 
 include 'db.php'; // Include database connection
 
-// Fetch data for the charts
-// Books by Genre
-$queryGenreDistribution = "
+// Fetch data for the bar chart
+$query = "
     SELECT 
         genres.name AS genre_name, 
         COUNT(books.id) AS book_count
@@ -17,25 +16,40 @@ $queryGenreDistribution = "
     GROUP BY genres.id, genres.name
     ORDER BY genres.name;
 ";
-$stmtGenreDistribution = $conn->prepare($queryGenreDistribution);
-$stmtGenreDistribution->execute();
-$genreData = $stmtGenreDistribution->fetchAll(PDO::FETCH_ASSOC);
+$stmt = $conn->prepare($query);
+$stmt->execute();
+$chartData = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Library Growth Over Time
-$queryLibraryGrowth = "
-    SELECT 
-        YEAR(published_year) AS year, 
-        COUNT(id) AS book_count
-    FROM books
-    GROUP BY YEAR(published_year)
-    ORDER BY YEAR(published_year);
+$genres = array_column($chartData, 'genre_name');
+$bookCounts = array_column($chartData, 'book_count');
+
+// Fetch total number of books
+$queryBooks = "SELECT COUNT(*) AS total_books FROM books";
+$stmtBooks = $conn->prepare($queryBooks);
+$stmtBooks->execute();
+$totalBooks = $stmtBooks->fetch(PDO::FETCH_ASSOC)['total_books'];
+
+// Fetch total number of genres
+$queryGenres = "SELECT COUNT(*) AS total_genres FROM genres";
+$stmtGenres = $conn->prepare($queryGenres);
+$stmtGenres->execute();
+$totalGenres = $stmtGenres->fetch(PDO::FETCH_ASSOC)['total_genres'];
+
+// Fetch most popular genre (genre with the most books)
+$queryPopularGenre = "
+    SELECT genres.name AS genre_name, COUNT(books.id) AS book_count
+    FROM genres
+    LEFT JOIN books ON genres.id = books.genre_id
+    GROUP BY genres.id, genres.name
+    ORDER BY book_count DESC
+    LIMIT 1;
 ";
-$stmtLibraryGrowth = $conn->prepare($queryLibraryGrowth);
-$stmtLibraryGrowth->execute();
-$growthData = $stmtLibraryGrowth->fetchAll(PDO::FETCH_ASSOC);
+$stmtPopularGenre = $conn->prepare($queryPopularGenre);
+$stmtPopularGenre->execute();
+$popularGenre = $stmtPopularGenre->fetch(PDO::FETCH_ASSOC);
 
-// Most Prolific Authors
-$queryProlificAuthors = "
+// Fetch most prolific author (author with the most books)
+$queryProlificAuthor = "
     SELECT 
         authors.name AS author_name, 
         COUNT(books.id) AS book_count
@@ -43,23 +57,12 @@ $queryProlificAuthors = "
     LEFT JOIN books ON authors.id = books.author_id
     GROUP BY authors.id, authors.name
     ORDER BY book_count DESC
-    LIMIT 5;
+    LIMIT 1;
 ";
-$stmtProlificAuthors = $conn->prepare($queryProlificAuthors);
-$stmtProlificAuthors->execute();
-$authorData = $stmtProlificAuthors->fetchAll(PDO::FETCH_ASSOC);
-
-// Prepare data for charts
-$genres = array_column($genreData, 'genre_name');
-$genreCounts = array_column($genreData, 'book_count');
-
-$years = array_column($growthData, 'year');
-$yearCounts = array_column($growthData, 'book_count');
-
-$authors = array_column($authorData, 'author_name');
-$authorCounts = array_column($authorData, 'book_count');
+$stmtProlificAuthor = $conn->prepare($queryProlificAuthor);
+$stmtProlificAuthor->execute();
+$prolificAuthor = $stmtProlificAuthor->fetch(PDO::FETCH_ASSOC);
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -73,41 +76,60 @@ $authorCounts = array_column($authorData, 'book_count');
     <!-- Navigation Bar -->
     <?php include 'header.php'; ?>
 
-    <!-- Visualizations -->
+    <!-- Metrics Overview Section -->
     <div class="container mt-4">
-        <h1 class="text-center mb-4">Library Visualizations</h1>
-
-        <!-- Pie Chart: Books by Genre -->
-        <div class="row mb-4">
-            <div class="col-md-6 mx-auto">
-                <div class="card">
+        <h1 class="text-center mb-4">Library Overview</h1>
+        <div class="row">
+            <!-- Total Books Card -->
+            <div class="col-md-3">
+                <div class="card text-center shadow">
                     <div class="card-body">
-                        <h5 class="card-title text-center">Books by Genre</h5>
-                        <canvas id="genrePieChart"></canvas>
+                        <h5 class="card-title">Total Books</h5>
+                        <p class="display-4"><?= htmlspecialchars($totalBooks) ?></p>
+                    </div>
+                </div>
+            </div>
+            <!-- Total Genres Card -->
+            <div class="col-md-3">
+                <div class="card text-center shadow">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Genres</h5>
+                        <p class="display-4"><?= htmlspecialchars($totalGenres) ?></p>
+                    </div>
+                </div>
+            </div>
+            <!-- Most Popular Genre Card -->
+            <div class="col-md-3">
+                <div class="card text-center shadow">
+                    <div class="card-body">
+                        <h5 class="card-title">Most Popular Genre</h5>
+                        <p class="display-6"><?= htmlspecialchars($popularGenre['genre_name']) ?></p>
+                        <p><?= htmlspecialchars($popularGenre['book_count']) ?> Books</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Most Prolific Author Card -->
+            <div class="col-md-3">
+                <div class="card text-center shadow">
+                    <div class="card-body">
+                        <h5 class="card-title">Most Prolific Author</h5>
+                        <p class="display-6"><?= htmlspecialchars($prolificAuthor['author_name']) ?></p>
+                        <p><?= htmlspecialchars($prolificAuthor['book_count']) ?> Books</p>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Line Chart: Library Growth Over Time -->
-        <div class="row mb-4">
-            <div class="col-md-8 mx-auto">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title text-center">Library Growth Over Time</h5>
-                        <canvas id="growthLineChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Horizontal Bar Chart: Most Prolific Authors -->
+    <!-- Bar Chart Section -->
+    <div class="container mt-4">
+        <h1 class="text-center mb-4">Books Per Genre</h1>
         <div class="row">
             <div class="col-md-8 mx-auto">
                 <div class="card">
                     <div class="card-body">
-                        <h5 class="card-title text-center">Most Prolific Authors</h5>
-                        <canvas id="authorsBarChart"></canvas>
+                        <h5 class="card-title text-center">Books Per Genre</h5>
+                        <canvas id="genreChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -116,57 +138,47 @@ $authorCounts = array_column($authorData, 'book_count');
 
     <!-- Chart.js Script -->
     <script>
-        // Pie Chart: Books by Genre
-        const genreCtx = document.getElementById('genrePieChart').getContext('2d');
-        new Chart(genreCtx, {
-            type: 'pie',
-            data: {
-                labels: <?= json_encode($genres) ?>,
-                datasets: [{
-                    data: <?= json_encode($genreCounts) ?>,
-                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4CAF50', '#9966FF'],
-                }]
-            }
-        });
-
-        // Line Chart: Library Growth Over Time
-        const growthCtx = document.getElementById('growthLineChart').getContext('2d');
-        new Chart(growthCtx, {
-            type: 'line',
-            data: {
-                labels: <?= json_encode($years) ?>,
-                datasets: [{
-                    label: 'Books Added',
-                    data: <?= json_encode($yearCounts) ?>,
-                    borderColor: '#007bff',
-                    fill: false
-                }]
-            },
-            options: {
-                scales: {
-                    x: { title: { display: true, text: 'Year' } },
-                    y: { title: { display: true, text: 'Books Added' }, beginAtZero: true }
-                }
-            }
-        });
-
-        // Horizontal Bar Chart: Most Prolific Authors
-        const authorCtx = document.getElementById('authorsBarChart').getContext('2d');
-        new Chart(authorCtx, {
+        const ctx = document.getElementById('genreChart').getContext('2d');
+        const genreChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: <?= json_encode($authors) ?>,
+                labels: <?= json_encode($genres) ?>, // Genres as labels
                 datasets: [{
                     label: 'Number of Books',
-                    data: <?= json_encode($authorCounts) ?>,
-                    backgroundColor: '#4CAF50'
+                    data: <?= json_encode($bookCounts) ?>, // Book counts as data
+                    backgroundColor: 'rgba(0, 123, 255, 0.5)', // Blue bars
+                    borderColor: 'rgba(0, 123, 255, 1)',
+                    borderWidth: 1
                 }]
             },
             options: {
-                indexAxis: 'y',
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.raw} books`;
+                            }
+                        }
+                    }
+                },
                 scales: {
-                    x: { title: { display: true, text: 'Books' } },
-                    y: { title: { display: true, text: 'Authors' } }
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Books'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Genres'
+                        }
+                    }
                 }
             }
         });
