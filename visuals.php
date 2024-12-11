@@ -9,31 +9,24 @@ include 'db.php'; // Include database connection
 // Fetch data for the charts
 $query = "
     SELECT 
-        books.genre_id,
-        genres.name AS genre_name
-    FROM books
-    LEFT JOIN genres ON books.genre_id = genres.id
+        genres.name AS genre_name, 
+        COUNT(books.id) AS book_count
+    FROM genres
+    LEFT JOIN books ON genres.id = books.genre_id
+    GROUP BY genres.id, genres.name
+    ORDER BY genres.name;
 ";
 $stmt = $conn->prepare($query);
 $stmt->execute();
-$rawData = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Handle multi-genre entries
-$genresCount = [];
-foreach ($rawData as $row) {
-    $genreNames = explode(',', $row['genre_name']); // Split comma-separated genres
-    foreach ($genreNames as $genreName) {
-        $genreName = trim($genreName); // Remove extra spaces
-        if (!isset($genresCount[$genreName])) {
-            $genresCount[$genreName] = 0;
-        }
-        $genresCount[$genreName]++;
-    }
-}
+$chartData = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Prepare data for Chart.js
-$genres = array_keys($genresCount);
-$bookCounts = array_values($genresCount);
+$genres = [];
+$bookCounts = [];
+foreach ($chartData as $data) {
+    $genres[] = $data['genre_name'];
+    $bookCounts[] = $data['book_count'];
+}
 ?>
 
 <!DOCTYPE html>
