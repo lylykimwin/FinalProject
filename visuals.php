@@ -31,10 +31,9 @@ $bookCounts = array_column($chartData, 'book_count');
 // Fetch data for the doughnut chart (book availability)
 $queryAvailability = "
     SELECT 
-        SUM(CASE WHEN book_stock.stock > 0 THEN 1 ELSE 0 END) AS available,
-        SUM(CASE WHEN book_stock.stock = 0 THEN 1 ELSE 0 END) AS out_of_stock
-    FROM books
-    JOIN book_stock ON books.id = book_stock.book_id;
+        SUM(CASE WHEN stock > 0 THEN 1 ELSE 0 END) AS available,
+        SUM(CASE WHEN stock = 0 THEN 1 ELSE 0 END) AS out_of_stock
+    FROM book_stock;
 ";
 $stmtAvailability = $conn->prepare($queryAvailability);
 $stmtAvailability->execute();
@@ -168,11 +167,6 @@ $prolificAuthor = $stmtProlificAuthor->fetch(PDO::FETCH_ASSOC);
                 </div>
             </div>
         </div>
-
-        <!-- Refresh Chart Button -->
-        <div class="text-center mb-4">
-            <button id="refreshChart" class="btn btn-secondary">Refresh Chart</button>
-        </div>
     </div>
 
     <!-- Chart.js Scripts -->
@@ -218,11 +212,6 @@ $prolificAuthor = $stmtProlificAuthor->fetch(PDO::FETCH_ASSOC);
             options: {
                 responsive: true,
             }
-        });
-
-        // Refresh Chart Button
-        document.getElementById('refreshChart').addEventListener('click', function () {
-            location.reload();
         });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
