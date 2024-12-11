@@ -1,13 +1,13 @@
 <?php
-header("Cache-Control: no-cache, must-revalidate");
-header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
-header("Content-Type: text/html");
-?>
-
 // Enable error reporting for debugging
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
+
+// Disable caching
+header("Cache-Control: no-cache, must-revalidate");
+header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
+header("Content-Type: text/html");
 
 include 'db.php'; // Include database connection
 
@@ -39,6 +39,11 @@ $queryAvailability = "
 $stmtAvailability = $conn->prepare($queryAvailability);
 $stmtAvailability->execute();
 $availability = $stmtAvailability->fetch(PDO::FETCH_ASSOC);
+
+// Debugging block
+echo "<!-- Debugging Data: ";
+echo "Available: {$availability['available']}, Out of Stock: {$availability['out_of_stock']}";
+echo " -->";
 
 // Fetch total number of books
 $queryBooks = "SELECT COUNT(*) AS total_books FROM books";
@@ -163,6 +168,11 @@ $prolificAuthor = $stmtProlificAuthor->fetch(PDO::FETCH_ASSOC);
                 </div>
             </div>
         </div>
+
+        <!-- Refresh Chart Button -->
+        <div class="text-center mb-4">
+            <button id="refreshChart" class="btn btn-secondary">Refresh Chart</button>
+        </div>
     </div>
 
     <!-- Chart.js Scripts -->
@@ -192,6 +202,10 @@ $prolificAuthor = $stmtProlificAuthor->fetch(PDO::FETCH_ASSOC);
 
         // Doughnut Chart: Book Availability
         const availabilityCtx = document.getElementById('availabilityChart').getContext('2d');
+        console.log('Doughnut Chart Data:', {
+            available: <?= $availability['available'] ?>,
+            out_of_stock: <?= $availability['out_of_stock'] ?>
+        });
         new Chart(availabilityCtx, {
             type: 'doughnut',
             data: {
@@ -200,7 +214,15 @@ $prolificAuthor = $stmtProlificAuthor->fetch(PDO::FETCH_ASSOC);
                     data: [<?= $availability['available'] ?>, <?= $availability['out_of_stock'] ?>],
                     backgroundColor: ['#4CAF50', '#FF6347'],
                 }]
+            },
+            options: {
+                responsive: true,
             }
+        });
+
+        // Refresh Chart Button
+        document.getElementById('refreshChart').addEventListener('click', function () {
+            location.reload();
         });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
