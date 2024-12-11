@@ -67,8 +67,7 @@ $queryProlificAuthor = "
 $stmtProlificAuthor = $conn->prepare($queryProlificAuthor);
 $stmtProlificAuthor->execute();
 $prolificAuthor = $stmtProlificAuthor->fetch(PDO::FETCH_ASSOC);
-
-
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
