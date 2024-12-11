@@ -4,85 +4,18 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-// Disable caching
-header("Cache-Control: no-cache, must-revalidate");
-header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
-header("Content-Type: text/html");
-
 include 'db.php'; // Include database connection
 
-// Fetch data for the bar chart
-$query = "
-    SELECT 
-        genres.name AS genre_name, 
-        COUNT(books.id) AS book_count
-    FROM genres
-    LEFT JOIN books ON genres.id = books.genre_id
-    GROUP BY genres.id, genres.name
-    ORDER BY genres.name;
-";
-$stmt = $conn->prepare($query);
-$stmt->execute();
-$chartData = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-$genres = array_column($chartData, 'genre_name');
-$bookCounts = array_column($chartData, 'book_count');
-
-// Fetch data for the doughnut chart (book availability)
+// Fetch data for Doughnut Chart (Book Availability)
 $queryAvailability = "
     SELECT 
         SUM(CASE WHEN stock > 0 THEN 1 ELSE 0 END) AS available,
         SUM(CASE WHEN stock = 0 THEN 1 ELSE 0 END) AS out_of_stock
     FROM book_stock;
 ";
-$stmtAvailability = $conn->prepare($queryAvailability);
-$stmtAvailability->execute();
-$availability = $stmtAvailability->fetch(PDO::FETCH_ASSOC);
-
-// Debugging block
-echo "<!-- Debugging Data: ";
-echo "Available: {$availability['available']}, Out of Stock: {$availability['out_of_stock']}";
-echo " -->";
-
-// Fetch total number of books
-$queryBooks = "SELECT COUNT(*) AS total_books FROM books";
-$stmtBooks = $conn->prepare($queryBooks);
-$stmtBooks->execute();
-$totalBooks = $stmtBooks->fetch(PDO::FETCH_ASSOC)['total_books'];
-
-// Fetch total number of genres
-$queryGenres = "SELECT COUNT(*) AS total_genres FROM genres";
-$stmtGenres = $conn->prepare($queryGenres);
-$stmtGenres->execute();
-$totalGenres = $stmtGenres->fetch(PDO::FETCH_ASSOC)['total_genres'];
-
-// Fetch most popular genre (genre with the most books)
-$queryPopularGenre = "
-    SELECT genres.name AS genre_name, COUNT(books.id) AS book_count
-    FROM genres
-    LEFT JOIN books ON genres.id = books.genre_id
-    GROUP BY genres.id, genres.name
-    ORDER BY book_count DESC
-    LIMIT 1;
-";
-$stmtPopularGenre = $conn->prepare($queryPopularGenre);
-$stmtPopularGenre->execute();
-$popularGenre = $stmtPopularGenre->fetch(PDO::FETCH_ASSOC);
-
-// Fetch most prolific author (author with the most books)
-$queryProlificAuthor = "
-    SELECT 
-        authors.name AS author_name, 
-        COUNT(books.id) AS book_count
-    FROM authors
-    LEFT JOIN books ON authors.id = books.author_id
-    GROUP BY authors.id, authors.name
-    ORDER BY book_count DESC
-    LIMIT 1;
-";
-$stmtProlificAuthor = $conn->prepare($queryProlificAuthor);
-$stmtProlificAuthor->execute();
-$prolificAuthor = $stmtProlificAuthor->fetch(PDO::FETCH_ASSOC);
+$stmt = $conn->prepare($queryAvailability);
+$stmt->execute();
+$availability = $stmt->fetch(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -97,67 +30,9 @@ $prolificAuthor = $stmtProlificAuthor->fetch(PDO::FETCH_ASSOC);
     <!-- Navigation Bar -->
     <?php include 'header.php'; ?>
 
-    <!-- Metrics Overview Section -->
+    <!-- Doughnut Chart -->
     <div class="container mt-4">
-        <h1 class="text-center mb-4">Library Overview</h1>
-        <div class="row">
-            <!-- Total Books Card -->
-            <div class="col-md-3">
-                <div class="card text-center shadow">
-                    <div class="card-body">
-                        <h5 class="card-title">Total Books</h5>
-                        <p class="display-4"><?= htmlspecialchars($totalBooks) ?></p>
-                    </div>
-                </div>
-            </div>
-            <!-- Total Genres Card -->
-            <div class="col-md-3">
-                <div class="card text-center shadow">
-                    <div class="card-body">
-                        <h5 class="card-title">Total Genres</h5>
-                        <p class="display-4"><?= htmlspecialchars($totalGenres) ?></p>
-                    </div>
-                </div>
-            </div>
-            <!-- Most Popular Genre Card -->
-            <div class="col-md-3">
-                <div class="card text-center shadow">
-                    <div class="card-body">
-                        <h5 class="card-title">Most Popular Genre</h5>
-                        <p class="display-6"><?= htmlspecialchars($popularGenre['genre_name']) ?></p>
-                        <p><?= htmlspecialchars($popularGenre['book_count']) ?> Books</p>
-                    </div>
-                </div>
-            </div>
-            <!-- Most Prolific Author Card -->
-            <div class="col-md-3">
-                <div class="card text-center shadow">
-                    <div class="card-body">
-                        <h5 class="card-title">Most Prolific Author</h5>
-                        <p class="display-6"><?= htmlspecialchars($prolificAuthor['author_name']) ?></p>
-                        <p><?= htmlspecialchars($prolificAuthor['book_count']) ?> Books</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Visualizations -->
-    <div class="container mt-4">
-        <!-- Bar Chart: Books Per Genre -->
-        <h2 class="text-center mb-4">Books Per Genre</h2>
-        <div class="row mb-4">
-            <div class="col-md-8 mx-auto">
-                <div class="card">
-                    <div class="card-body">
-                        <canvas id="genreChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Doughnut Chart: Book Availability -->
-        <h2 class="text-center mb-4">Book Availability</h2>
+        <h2 class="text-center">Book Availability</h2>
         <div class="row mb-4">
             <div class="col-md-6 mx-auto">
                 <div class="card">
@@ -169,48 +44,20 @@ $prolificAuthor = $stmtProlificAuthor->fetch(PDO::FETCH_ASSOC);
         </div>
     </div>
 
-    <!-- Chart.js Scripts -->
+    <!-- Chart.js Script -->
     <script>
-        // Bar Chart: Books Per Genre
-        const genreCtx = document.getElementById('genreChart').getContext('2d');
-        new Chart(genreCtx, {
-            type: 'bar',
-            data: {
-                labels: <?= json_encode($genres) ?>,
-                datasets: [{
-                    label: 'Number of Books',
-                    data: <?= json_encode($bookCounts) ?>,
-                    backgroundColor: 'rgba(0, 123, 255, 0.5)',
-                    borderColor: 'rgba(0, 123, 255, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: { beginAtZero: true, title: { display: true, text: 'Books' } },
-                    x: { title: { display: true, text: 'Genres' } }
-                }
-            }
-        });
-
-        // Doughnut Chart: Book Availability
-        const availabilityCtx = document.getElementById('availabilityChart').getContext('2d');
-        console.log('Doughnut Chart Data:', {
-            available: <?= $availability['available'] ?>,
-            out_of_stock: <?= $availability['out_of_stock'] ?>
-        });
-        new Chart(availabilityCtx, {
+        const ctx = document.getElementById('availabilityChart').getContext('2d');
+        new Chart(ctx, {
             type: 'doughnut',
             data: {
                 labels: ['Available', 'Out of Stock'],
                 datasets: [{
                     data: [<?= $availability['available'] ?>, <?= $availability['out_of_stock'] ?>],
-                    backgroundColor: ['#4CAF50', '#FF6347'],
+                    backgroundColor: ['#4CAF50', '#FF6347']
                 }]
             },
             options: {
-                responsive: true,
+                responsive: true
             }
         });
     </script>
