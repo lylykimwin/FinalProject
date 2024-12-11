@@ -34,43 +34,27 @@ $stmtAvailability = $conn->prepare($queryAvailability);
 $stmtAvailability->execute();
 $availability = $stmtAvailability->fetch(PDO::FETCH_ASSOC);
 
-// Debugging: Output raw availability data
-echo "<!-- Debugging Data: Available: {$availability['available']}, Out of Stock: {$availability['out_of_stock']} -->";
-
-// Fetch metrics: Total Books, Genres, Most Popular Genre, Most Prolific Author
-$totalBooksQuery = "SELECT COUNT(*) AS total_books FROM books";
-$stmtTotalBooks = $conn->prepare($totalBooksQuery);
-$stmtTotalBooks->execute();
-$totalBooks = $stmtTotalBooks->fetch(PDO::FETCH_ASSOC)['total_books'];
-
-$totalGenresQuery = "SELECT COUNT(*) AS total_genres FROM genres";
-$stmtTotalGenres = $conn->prepare($totalGenresQuery);
-$stmtTotalGenres->execute();
-$totalGenres = $stmtTotalGenres->fetch(PDO::FETCH_ASSOC)['total_genres'];
-
-$popularGenreQuery = "
-    SELECT genres.name AS genre_name, COUNT(books.id) AS book_count
-    FROM genres
-    LEFT JOIN books ON genres.id = books.genre_id
-    GROUP BY genres.id, genres.name
-    ORDER BY book_count DESC
-    LIMIT 1;
-";
-$stmtPopularGenre = $conn->prepare($popularGenreQuery);
-$stmtPopularGenre->execute();
-$popularGenre = $stmtPopularGenre->fetch(PDO::FETCH_ASSOC);
-
-$prolificAuthorQuery = "
+// Fetch data for the pie chart (Author Contribution)
+$queryAuthorContribution = "
     SELECT authors.name AS author_name, COUNT(books.id) AS book_count
     FROM authors
     LEFT JOIN books ON authors.id = books.author_id
     GROUP BY authors.id, authors.name
     ORDER BY book_count DESC
-    LIMIT 1;
+    LIMIT 10;
 ";
-$stmtProlificAuthor = $conn->prepare($prolificAuthorQuery);
-$stmtProlificAuthor->execute();
-$prolificAuthor = $stmtProlificAuthor->fetch(PDO::FETCH_ASSOC);
+$stmtAuthorContribution = $conn->prepare($queryAuthorContribution);
+$stmtAuthorContribution->execute();
+$authorData = $stmtAuthorContribution->fetchAll(PDO::FETCH_ASSOC);
+
+$authors = array_column($authorData, 'author_name');
+$authorBookCounts = array_column($authorData, 'book_count');
+
+// Calculate percentages for the pie chart
+$totalBooksByTopAuthors = array_sum($authorBookCounts);
+$authorPercentages = array_map(function($count) use ($totalBooksByTopAuthors) {
+    return round(($count / $totalBooksByTopAuthors) * 100, 2);
+}, $authorBookCounts);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -94,7 +78,7 @@ $prolificAuthor = $stmtProlificAuthor->fetch(PDO::FETCH_ASSOC);
                 <div class="card text-center shadow">
                     <div class="card-body">
                         <h5 class="card-title">Total Books</h5>
-                        <p class="display-4"><?= htmlspecialchars($totalBooks) ?></p>
+                        <p class="display-4"><?= htmlspecialchars($availability['available']) + htmlspecialchars($availability['out_of_stock']) ?></p>
                     </div>
                 </div>
             </div>
@@ -103,27 +87,7 @@ $prolificAuthor = $stmtProlificAuthor->fetch(PDO::FETCH_ASSOC);
                 <div class="card text-center shadow">
                     <div class="card-body">
                         <h5 class="card-title">Total Genres</h5>
-                        <p class="display-4"><?= htmlspecialchars($totalGenres) ?></p>
-                    </div>
-                </div>
-            </div>
-            <!-- Most Popular Genre Card -->
-            <div class="col-md-3">
-                <div class="card text-center shadow">
-                    <div class="card-body">
-                        <h5 class="card-title">Most Popular Genre</h5>
-                        <p class="display-6"><?= htmlspecialchars($popularGenre['genre_name']) ?></p>
-                        <p><?= htmlspecialchars($popularGenre['book_count']) ?> Books</p>
-                    </div>
-                </div>
-            </div>
-            <!-- Most Prolific Author Card -->
-            <div class="col-md-3">
-                <div class="card text-center shadow">
-                    <div class="card-body">
-                        <h5 class="card-title">Most Prolific Author</h5>
-                        <p class="display-6"><?= htmlspecialchars($prolificAuthor['author_name']) ?></p>
-                        <p><?= htmlspecialchars($prolificAuthor['book_count']) ?> Books</p>
+                        <p class="display-4"><?= htmlspecialchars(count($genres)) ?></p>
                     </div>
                 </div>
             </div>
@@ -132,25 +96,13 @@ $prolificAuthor = $stmtProlificAuthor->fetch(PDO::FETCH_ASSOC);
 
     <!-- Visualizations Section -->
     <div class="container mt-4">
-        <!-- Bar Chart: Books Per Genre -->
-        <h2 class="text-center mb-4">Books Per Genre</h2>
-        <div class="row mb-4">
-            <div class="col-md-8 mx-auto">
-                <div class="card">
-                    <div class="card-body">
-                        <canvas id="genreChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Doughnut Chart: Book Availability -->
-        <h2 class="text-center mb-4">Book Availability</h2>
+        <!-- Pie Chart: Author Contribution -->
+        <h2 class="text-center mb-4">Author Contribution</h2>
         <div class="row mb-4">
             <div class="col-md-6 mx-auto">
                 <div class="card">
                     <div class="card-body">
-                        <canvas id="availabilityChart"></canvas>
+                        <canvas id="authorChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -159,42 +111,31 @@ $prolificAuthor = $stmtProlificAuthor->fetch(PDO::FETCH_ASSOC);
 
     <!-- Chart.js Scripts -->
     <script>
-        // Bar Chart: Books Per Genre
-        const genreCtx = document.getElementById('genreChart').getContext('2d');
-        new Chart(genreCtx, {
-            type: 'bar',
+        // Pie Chart: Author Contribution
+        const authorCtx = document.getElementById('authorChart').getContext('2d');
+        new Chart(authorCtx, {
+            type: 'pie',
             data: {
-                labels: <?= json_encode($genres) ?>,
+                labels: <?= json_encode($authors) ?>,
                 datasets: [{
-                    label: 'Number of Books',
-                    data: <?= json_encode($bookCounts) ?>,
-                    backgroundColor: 'rgba(0, 123, 255, 0.5)',
-                    borderColor: 'rgba(0, 123, 255, 1)',
-                    borderWidth: 1
+                    data: <?= json_encode($authorPercentages) ?>,
+                    backgroundColor: [
+                        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+                        '#FF9F40', '#E7E9ED', '#8E44AD', '#2ECC71', '#3498DB'
+                    ]
                 }]
             },
             options: {
                 responsive: true,
-                scales: {
-                    y: { beginAtZero: true, title: { display: true, text: 'Books' } },
-                    x: { title: { display: true, text: 'Genres' } }
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.label}: ${context.raw}%`;
+                            }
+                        }
+                    }
                 }
-            }
-        });
-
-        // Doughnut Chart: Book Availability
-        const availabilityCtx = document.getElementById('availabilityChart').getContext('2d');
-        new Chart(availabilityCtx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Available', 'Out of Stock'],
-                datasets: [{
-                    data: [<?= $availability['available'] ?>, <?= $availability['out_of_stock'] ?>],
-                    backgroundColor: ['#4CAF50', '#FF6347']
-                }]
-            },
-            options: {
-                responsive: true
             }
         });
     </script>
