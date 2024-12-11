@@ -23,6 +23,39 @@ $chartData = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $genres = array_column($chartData, 'genre_name');
 $bookCounts = array_column($chartData, 'book_count');
 
+// Fetch data for the doughnut chart (book availability)
+$queryAvailability = "
+    SELECT 
+        SUM(CASE WHEN book_stock.stock > 0 THEN 1 ELSE 0 END) AS available,
+        SUM(CASE WHEN book_stock.stock = 0 THEN 1 ELSE 0 END) AS out_of_stock
+    FROM books
+    JOIN book_stock ON books.id = book_stock.book_id;
+";
+$stmtAvailability = $conn->prepare($queryAvailability);
+$stmtAvailability->execute();
+$availability = $stmtAvailability->fetch(PDO::FETCH_ASSOC);
+
+// Fetch data for the bubble chart (pricing and popularity)
+$queryPopularity = "
+    SELECT 
+        books.title AS book_title, 
+        book_stock.price AS price, 
+        COUNT(cart.book_id) AS popularity
+    FROM books
+    JOIN book_stock ON books.id = book_stock.book_id
+    LEFT JOIN cart ON books.id = cart.book_id
+    GROUP BY books.id, books.title, book_stock.price
+    HAVING popularity > 0
+    ORDER BY popularity DESC;
+";
+$stmtPopularity = $conn->prepare($queryPopularity);
+$stmtPopularity->execute();
+$popularityData = $stmtPopularity->fetchAll(PDO::FETCH_ASSOC);
+
+$titles = array_column($popularityData, 'book_title');
+$prices = array_column($popularityData, 'price');
+$popularities = array_column($popularityData, 'popularity');
+
 // Fetch total number of books
 $queryBooks = "SELECT COUNT(*) AS total_books FROM books";
 $stmtBooks = $conn->prepare($queryBooks);
@@ -121,8 +154,9 @@ $prolificAuthor = $stmtProlificAuthor->fetch(PDO::FETCH_ASSOC);
         </div>
     </div>
 
-    <!-- Bar Chart Section -->
+    <!-- Visualizations -->
     <div class="container mt-4">
+        <!-- Bar Chart: Books Per Genre -->
         <h2 class="text-center mb-4">Books Per Genre</h2>
         <div class="row mb-4">
             <div class="col-md-8 mx-auto">
@@ -133,9 +167,33 @@ $prolificAuthor = $stmtProlificAuthor->fetch(PDO::FETCH_ASSOC);
                 </div>
             </div>
         </div>
+
+        <!-- Doughnut Chart: Book Availability -->
+        <h2 class="text-center mb-4">Book Availability</h2>
+        <div class="row mb-4">
+            <div class="col-md-6 mx-auto">
+                <div class="card">
+                    <div class="card-body">
+                        <canvas id="availabilityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bubble Chart: Pricing vs Popularity -->
+        <h2 class="text-center mb-4">Pricing vs. Popularity</h2>
+        <div class="row mb-4">
+            <div class="col-md-8 mx-auto">
+                <div class="card">
+                    <div class="card-body">
+                        <canvas id="popularityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Chart.js Script -->
+    <!-- Chart.js Scripts -->
     <script>
         // Bar Chart: Books Per Genre
         const genreCtx = document.getElementById('genreChart').getContext('2d');
@@ -156,6 +214,44 @@ $prolificAuthor = $stmtProlificAuthor->fetch(PDO::FETCH_ASSOC);
                 scales: {
                     y: { beginAtZero: true, title: { display: true, text: 'Books' } },
                     x: { title: { display: true, text: 'Genres' } }
+                }
+            }
+        });
+
+        // Doughnut Chart: Book Availability
+        const availabilityCtx = document.getElementById('availabilityChart').getContext('2d');
+        new Chart(availabilityCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Available', 'Out of Stock'],
+                datasets: [{
+                    data: [<?= $availability['available'] ?>, <?= $availability['out_of_stock'] ?>],
+                    backgroundColor: ['#4CAF50', '#FF6347'],
+                }]
+            }
+        });
+
+        // Bubble Chart: Pricing vs Popularity
+        const popularityCtx = document.getElementById('popularityChart').getContext('2d');
+        new Chart(popularityCtx, {
+            type: 'bubble',
+            data: {
+                datasets: [{
+                    label: 'Books',
+                    data: <?= json_encode(array_map(function ($title, $price, $popularity) {
+                        return [
+                            'x' => $price,
+                            'y' => $popularity,
+                            'r' => $popularity * 2
+                        ];
+                    }, $titles, $prices, $popularities)) ?>,
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)'
+                }]
+            },
+            options: {
+                scales: {
+                    x: { title: { display: true, text: 'Price ($)' } },
+                    y: { title: { display: true, text: 'Popularity (Cart Additions)' }, beginAtZero: true }
                 }
             }
         });
