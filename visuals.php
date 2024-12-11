@@ -26,13 +26,16 @@ $bookCounts = array_column($barChartData, 'book_count');
 // Fetch data for the doughnut chart (Book Availability)
 $queryAvailability = "
     SELECT 
-        SUM(CASE WHEN stock > 0 THEN 1 ELSE 0 END) AS available,
+        SUM(CASE WHEN stock > 0 THEN stock ELSE 0 END) AS available,
         SUM(CASE WHEN stock = 0 THEN 1 ELSE 0 END) AS out_of_stock
     FROM book_stock;
 ";
 $stmtAvailability = $conn->prepare($queryAvailability);
 $stmtAvailability->execute();
 $availability = $stmtAvailability->fetch(PDO::FETCH_ASSOC);
+
+// Debugging: Output raw availability data
+echo "<!-- Debugging Data: Available: {$availability['available']}, Out of Stock: {$availability['out_of_stock']} -->";
 
 // Fetch metrics: Total Books, Genres, Most Popular Genre, Most Prolific Author
 $totalBooksQuery = "SELECT COUNT(*) AS total_books FROM books";
