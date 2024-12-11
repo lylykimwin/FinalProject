@@ -44,6 +44,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if (isset($_POST['remove_item'])) {
+        $bookIdToRemove = $_POST['remove_item'];
+        unset($_SESSION['cart'][$bookIdToRemove]); // Remove the specific item
+        header('Location: cart.php');
+        exit;
+    }
+
     if (isset($_POST['clear_cart'])) {
         unset($_SESSION['cart']); // Clear the cart
         header('Location: cart.php');
@@ -59,6 +66,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Your Cart - Lyly's Library</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script>
+        function confirmRemove() {
+            return confirm('Are you sure you want to remove this item from the cart?');
+        }
+    </script>
 </head>
 <body>
     <!-- Navigation Bar -->
@@ -115,7 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </td>
                                 <td>$<?= number_format($book['subtotal'], 2) ?></td>
                                 <td>
-                                    <button type="submit" name="quantities[<?= $book['id'] ?>]" value="0" class="btn btn-danger btn-sm">Remove</button>
+                                    <button type="submit" name="remove_item" value="<?= $book['id'] ?>" class="btn btn-danger btn-sm" onclick="return confirmRemove();">Remove</button>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
